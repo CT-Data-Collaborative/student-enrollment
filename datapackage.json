@@ -20,55 +20,47 @@
     "web": "http://ctdata.org"
   }],
   "contributor": [],
-  "resources": [
-    {
-      "path": "data/data.csv",
+  "resources": [{
+      "path": "data/student-enrollment-by-grade_2007-2016", 
       "format": "csv",
       "schema": {
-        "fields": [
-          {
+        "fields": [{
             "name": "District",
             "type": "string",
-            "constraints": {
-              "enum": ["Town", "County", "Town/County", "District", "Other"]
-            },
             "dimension": false
-          },
-          {
+          }, {
             "name": "FIPS",
             "type": "string",
             "dimension": false
-          },
-          {
+          }, {
             "name": "Year",
             "type": "string",
             "dimension": false
-          },
-          {
+          }, {
+            "name": "Grade",
+            "type": "string",
+            "dimension": true
+          }, {
             "name": "Measure Type",
             "type": "string",
             "dimension": true
-          },
-          {
+          }, {
             "name": "Variable",
             "type": "string",
             "dimension": false
-          },
-          {
+          }, {
             "name": "Value",
             "type": "number",
             "dimension": false
-          }
-        ]
+          }]
       }
-    }
-  ],
+    }],
   "last_modified": "02/07/2017",
   "ckan_extras": {
     "full_description": {
       "ckan_name": "Full Description",
       "value": "Connecticut State Department of Education collects data for grades PreK through 12 on a school year basis. CTdata.org carries annual data for all grades.",
-      "type": "string",
+      "type": "string"
     },
     "suppression": {
       "ckan_name": "Suppression",
@@ -78,17 +70,17 @@
     "technical_notes": {
       "ckan_name": "Technical Notes",
       "value": "Technical notes",
-      "type": "string",
+      "type": "string"
     },
     "domain": {
       "ckan_name": "Domain",
       "value": "Education",
-      "type": "string",
+      "type": "string"
     },
     "subdomain": {
       "ckan_name": "Subdomain",
       "value": "Student Demographics",
-      "type": "string",
+      "type": "string"
     },
     "geography": {
       "ckan_name": "Geography",
@@ -105,13 +97,13 @@
     },
     "years_in_catalog": {
       "ckan_name": "Years in Catalog",
-      "value": []
-      "type": "array",
+      "value": [2007-2008, 2008-2009, 2009-2010, 2010-2011, 2011-2012, 2012-2013, 2013-2014, 2014-2015, 2015-2016],
+      "type": "array"
     },
     "latest_year": {
       "ckan_name": "Latest Year Available from Source",
-      "value": "2014-2015",
-      "type": "string",
+      "value": "2015-2016",
+      "type": "string"
     },
     "disabled_views": {
       "ckan_name": "Disabled Views",
@@ -130,6 +122,55 @@
     },
     "default": {},
   },
-  "spot_tests": [],
-  "dimension_groups": []
+  "spot_checks": [
+    {
+      "type": "$lookup",
+      "filter": {
+        "District": "Bozrah School District",
+        "Year": "2009-2010",
+        "Grade": "Pre Kindergarten",
+        "Measure Type": "Number"
+      },
+      "expected": {
+        "type": "$match",
+        "number type": "int",
+        "value": -9999
+      }
+    },
+    {
+      "type": "$lookup",
+      "filter": {
+        "District": "Booker T Washington Academy District",
+        "Year": "2014-2015",
+        "Grade": "Total",
+        "Measure Type": "Number"
+      },
+      "expected": {
+        "type": "$match",
+        "number type": "int",
+        "value": 91
+      }
+    }
+    ], 
+  "dimension_groups": [
+    {
+      "Grade": [
+        "Pre Kindergarten", 
+        "Kindergarten", 
+        "1", 
+        "2", 
+        "3", 
+        "4", 
+        "5", 
+        "6", 
+        "7", 
+        "8", 
+        "9", 
+        "10", 
+        "11", 
+        "12", 
+        "Total"
+      ]
+    }
+  ] 
 }
