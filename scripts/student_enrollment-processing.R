@@ -1,8 +1,3 @@
-# library(stringr)
-# library(reshape2)
-# library(data.table)
-# library(plyr)
-
 ##################################################################
 #
 # Processing Script for Student Enrollment
@@ -15,6 +10,7 @@
 #rename 's/^/student-/' *                #adds `student-` to the beginning of each filename
 #rename 's/\./_by-grade./g' *.csv -v     #adds `_by-grade` to the end of each filename
 
+#set up working env
 sub_folders <- list.files()
 data_location <- grep("raw", sub_folders, value=T)
 path <- (paste0(getwd(), "/", data_location))
@@ -49,30 +45,33 @@ for (i in 1:length(enrollment_data)) {
 dfs <- ls()[sapply(mget(ls(), .GlobalEnv), is.data.frame)]
 get_data_only <- grep("^data", dfs, value=T)
 
-data_all <- data.frame(stringsAsFactors=F)
+enrollment_combined <- data.frame(stringsAsFactors=F)
 
 for (i in 1:length(get_data_only)) {
-  data_all <- rbind(data_all, get(get_data_only[i]))
+  enrollment_combined <- rbind(enrollment_combined, get(get_data_only[i]))
 }
 
+#removes indiv year files
+rm(list=ls(pattern="data"))
+
 # convert columns to appropriate classes
-data_all$District<-as.factor(data_all$District)
-data_all$Year<-as.factor(data_all$Year)
-data_all$Total<-as.integer(data_all$Total)
+enrollment_combined$District<-as.factor(enrollment_combined$District)
+enrollment_combined$Year<-as.factor(enrollment_combined$Year)
+enrollment_combined$Total<-as.integer(enrollment_combined$Total)
 
 #rename columns
-colnames(data_all) <- c("District", "Pre Kindergarten", "Kindergarten", 
-                        "1", "2", "3", "4", "5", "6", "7", "8", 
-                        "9", "10", "11", "12", "Total", "Year" )
+colnames(enrollment_combined) <- c("District", "Pre Kindergarten", "Kindergarten", 
+                                   "1", "2", "3", "4", "5", "6", "7", "8", 
+                                   "9", "10", "11", "12", "Total", "Year" )
 
 #reshape from wide to long format
 cols_to_stack <- c( "Pre Kindergarten", "Kindergarten", 
                     "1", "2", "3", "4", "5", "6", "7", "8", 
                     "9", "10", "11", "12", "Total")
-       
-long_row_count = nrow(data_all) * length(cols_to_stack)
 
-long <- reshape(data_all, 
+long_row_count = nrow(enrollment_combined) * length(cols_to_stack)
+
+long <- reshape(enrollment_combined, 
                 varying = cols_to_stack, 
                 v.names = "Value", 
                 timevar = "Grade", 
@@ -81,11 +80,120 @@ long <- reshape(data_all,
                 direction = "long"
 )
 
-#merge in FIPS
-fips <- read.csv(paste0(path, "/", "school_district_ref.csv"), stringsAsFactors=F, header=T)
-enrollment_data_all <- merge(long, fips, by="District")
+#reorder columns and remove ID column
+long <- long[order(long$District, long$Year),]
+long$id <- NULL
 
-##MISSING DISTRICTS from school_district_ref.csv
+#merge in FIPS and match Districts to their Fixed Districts
+fips <- read.csv(paste0(path, "/", "school_district_ref.csv"), stringsAsFactors=F, header=T)
+
+merge_long_fips <- merge(long, fips, all=T)
+
+#unique(merge_long_fips$FixedDistrict)
+
+#remove rows where year, grade and value is.na (removes those rows where District(raw) != District(ref))
+remove_NAs <- merge_long_fips[!with(merge_long_fips,is.na(merge_long_fips$Year) & is.na(merge_long_fips$Grade) & is.na(merge_long_fips$Value)),]
+
+#unique(remove_NAs$FixedDistrict)
+
+#re-label FixedDistrict=NA as Connecticut (all "Total" rows from District(raw))
+remove_NAs$District <- as.character(remove_NAs$District)
+remove_NAs <- within(remove_NAs, FixedDistrict[District == 'Total'] <- 'Connecticut')
+remove_NAs <- within(remove_NAs, FIPS[District == 'Total'] <- '09')
+
+#unique(remove_NAs$FixedDistrict)
+
+#backfill years (identify missing years)
+years <- c(
+  "2007-2008", 
+  "2008-2009", 
+  "2009-2010", 
+  "2010-2011", 
+  "2011-2012", 
+  "2012-2013", 
+  "2013-2014", 
+  "2014-2015", 
+  "2015-2016"
+)
+
+#backfill grades
+grades <- c(
+  "Pre Kindergarten", 
+  "Kindergarten", 
+  "1", 
+  "2", 
+  "3", 
+  "4", 
+  "5", 
+  "6", 
+  "7", 
+  "8", 
+  "9", 
+  "10", 
+  "11", 
+  "12", 
+  "Total"
+)
+
+backfill <- expand.grid(
+  `FixedDistrict` = unique(remove_NAs$FixedDistrict),
+  `Year` = years,
+  `Grade` = grades
+)
+
+#backfill has all FixedDistrict, Grade, and Year permutations
+backfill <- backfill[order(backfill$FixedDistrict, backfill$Year, backfill$Grade),]
+
+#reorder Grade levels for sorting
+remove_NAs$Grade <- factor(remove_NAs$Grade, levels = cols_to_stack)
+remove_NAs <- remove_NAs[order(remove_NAs$FixedDistrict, remove_NAs$Year, remove_NAs$Grade),]
+
+backfill_data <- merge(remove_NAs, backfill, all=T) 
+backfill_data <- backfill_data[order(backfill_data$FixedDistrict, backfill_data$District),]
+
+# convert columns to appropriate classes
+backfill_data$District <- as.character(backfill_data$FixedDistrict)
+backfill_data$Year <- as.character(backfill_data$Year)
+backfill_data$Grade <- as.character(backfill_data$Grade)
+
+backfill_data <- backfill_data[order(backfill_data$FixedDistrict, backfill_data$District, backfill_data$Year, backfill_data$Grade),]
+
+#reorder columns
+backfill_data <- backfill_data[c("FixedDistrict", "District", "FIPS", "Year", "Grade", "Value")]
+
+#finds all districts that report values for the same year, for the same fixed district (only needs to be done if rowcount(backfill) != rowcount(backfill_data)) *should add conditional if statement
+duplicates <- backfill_data[(duplicated(backfill_data[c("FixedDistrict","Year","Grade")]) | duplicated(backfill_data[c("FixedDistrict","Year","Grade")], fromLast = TRUE)), ]
+
+duplicates$Value <- as.integer(duplicates$Value)
+remove_duplicates <- aggregate(Value ~ FixedDistrict + District + Year + Grade , data = duplicates, sum)
+
+remove_duplicates <- remove_duplicates[c("FixedDistrict", "District", "Year", "Grade", "Value")]
+remove_duplicates$Grade <- factor(remove_duplicates$Grade, levels = cols_to_stack)
+
+remove_duplicates <- remove_duplicates[order(remove_duplicates$FixedDistrict, remove_duplicates$District, remove_duplicates$Year, remove_duplicates$Grade),]
+
+#replaces duplicates from backfilled data with aggregated values
+enrollment_combined_final <- merge(backfill_data, remove_duplicates, by= c("FixedDistrict", "District", "Year", "Grade"),  all.x = T)
+enrollment_combined_final$Value.x[!is.na(enrollment_combined_final$Value.y)] <- enrollment_combined_final$Value.y[!is.na(enrollment_combined_final$Value.y)]
+enrollment_combined_final<-enrollment_combined_final[!duplicated(enrollment_combined_final), ]
+enrollment_combined_final$Value.y <-NULL
+
+#reconfigure column names
+enrollment_combined_final <- enrollment_combined_final[c("FixedDistrict", "District", "FIPS", "Year", "Grade", "Value.x")]
+colnames(enrollment_combined_final)[6] <- "Value"
+enrollment_combined_final[2] = NULL
+colnames(enrollment_combined_final)[1] <- "District"
+
+enrollment_combined_final$District <- as.character(enrollment_combined_final$District)
+enrollment_combined_final$Year <- as.character(enrollment_combined_final$Year)
+enrollment_combined_final$Grade <- as.character(enrollment_combined_final$Grade)
+enrollment_combined_final$Value <- as.integer(enrollment_combined_final$Value)
+
+#add columns
+enrollment_combined_final$"Measure Type" <- "Number"
+enrollment_combined_final$"Variable" <- "Student Enrollment"
+
+##ADDED DISTRICTS from school_district_ref.csv
 # Eastern Connecticut Regional Educational Service Center (EASTCONN)     
 # Park City Prep Charter School District                            
 # Charter School for Young Children on Asylum Hill District              
@@ -95,41 +203,38 @@ enrollment_data_all <- merge(long, fips, by="District")
 # Stamford Charter School for Excellence District                        
 # Capital Preparatory Harbor School Inc. District  
 
-#add columns
-enrollment_data_all$"Measure Type" <- "Number"
-enrollment_data_all$"Variable" <- "Student Enrollment"
+##REMOVED DISTRICTS from school_district_ref.csv
+# Department of Children and Families
+# Department of Corrections
 
-#reorder/rename columns
-enrollment_data_all <- enrollment_data_all[c("id", "FixedDistrict", "District", "FIPS", "Year", "Grade", "Measure Type", "Variable", "Value")]
-enrollment_data_all[3] = NULL
-colnames(enrollment_data_all)[2] <- "District"
+enrollment_combined_final <- enrollment_combined_final[c("District", "FIPS", "Year", "Grade", "Measure Type", "Variable", "Value")]
 
 #order grade levels for sorting
-enrollment_data_all$Grade <- factor(enrollment_data_all$Grade, levels = cols_to_stack)
+enrollment_combined_final$Grade <- factor(enrollment_combined_final$Grade, levels = cols_to_stack)
 
 #sort data
-enrollment_data_all <- enrollment_data_all[order(enrollment_data_all$District, enrollment_data_all$Year, enrollment_data_all$Grade),]
+enrollment_combined_final <- enrollment_combined_final[order(enrollment_combined_final$District, enrollment_combined_final$Year, enrollment_combined_final$Grade),]
 
-#re-label "Total" as "Connecticut" and assign FIPS
-enrollment_data_all$District[enrollment_data_all$District %in% c(NA)] <- "Connecticut"
-enrollment_data_all$FIPS[enrollment_data_all$District %in% c("Connecticut")] <- 09
 
-#create data frame that calls out all entries with no data for enrollment
-value_NAs <- enrollment_data_all[is.na(enrollment_data_all$Value),]
+#create data frame that calls out all entries with no data for enrollment (both for any grade and any year) (important - done before imputation)
+##################################################################################################################
+value_NAs <- enrollment_combined_final[is.na(enrollment_combined_final$Value),]
 value_NAs$Grade <- factor(value_NAs$Grade, levels = c("Pre Kindergarten", "Kindergarten", "1", "2", "3", "4", 
                                                       "5", "6", "7", "8", "9", "10", "11", "12", "Total"))
 value_NAs <- value_NAs[order(value_NAs$District, value_NAs$Year, value_NAs$Grade),]
+##################################################################################################################
 
 #recode no enrollment data with -9999
-enrollment_data_all[["Value"]][is.na(enrollment_data_all[["Value"]])] <- -9999
+enrollment_combined_final[["Value"]][is.na(enrollment_combined_final[["Value"]])] <- -9999
 
 #return blank in FIPS if not reported
-enrollment_data_all$FIPS <- as.character(enrollment_data_all$FIPS)
-enrollment_data_all[["FIPS"]][is.na(enrollment_data_all[["FIPS"]])] <- ""
+enrollment_combined_final$FIPS <- as.character(enrollment_combined_final$FIPS)
+enrollment_combined_final[["FIPS"]][is.na(enrollment_combined_final[["FIPS"]])] <- ""
+
 
 # Write to File
 write.table(
-  enrollment_data_all,
+  enrollment_combined_final,
   file.path(getwd(), "data", "student-enrollment-by-grade_2007-2016.csv"),
   sep = ",",
   row.names = F
