@@ -11,7 +11,7 @@
     "id": "odc-pddl"
   }],
   "sources": [{
-    "name": "CTSDE",
+    "name": "ctsde",
     "web": ""
   }],
   "author":[ {
@@ -39,15 +39,36 @@
           }, {
             "name": "Grade",
             "type": "string",
-            "dimension": true
+            "dimension": true,
+            "constraints": {
+              "enum": [
+                "Pre Kindergarten",
+                "Kindergarten",
+                "1",
+                "2",
+                "3",
+                "4",
+                "5",
+                "6",
+                "7",
+                "8",
+                "9",
+                "10",
+                "11",
+                "12",
+                "Total"
+              ]
+			}
           }, {
             "name": "Measure Type",
             "type": "string",
-            "dimension": true
+            "dimension": true,
+			"constraints": { "enum": [ "Number" ] }
           }, {
             "name": "Variable",
             "type": "string",
-            "dimension": false
+            "dimension": true,
+			"constraints": { "enum": [ "Student Enrollment" ] }
           }, {
             "name": "Value",
             "type": "number",
@@ -101,7 +122,7 @@
       "type": "array"
     },
     "latest_year": {
-      "ckan_name": "Latest Year Available from Source",
+      "ckan_name": "Latest Year Available",
       "value": "2015-2016",
       "type": "string"
     },
@@ -115,17 +136,14 @@
     },
     "units": {
       "ckan_name": "Units",
-      "value": {
-        "Number": "",
-        "Percent": "%"
-      }
+      "value": ""
     },
-        "expected_number_of_geographies": {
-          "ckan_name": "Expected Number of Unique Geographies",
-          "value": 203, 
-          "type": "string"
-        },
-    "default": {}
+    "expected_number_of_geographies": {
+       "ckan_name": "Expected Number of Unique Geographies",
+       "value": 203, 
+       "type": "string"
+    },
+    "default": { "Grade": "Total", "Measure Type": "Number", "District": "Connecticut", "Year": [ "2013-2014", "2014-2015", "2015-2016" ], "Variable": "Student Enrollment" }
   },
   "spot_checks": [
     {
