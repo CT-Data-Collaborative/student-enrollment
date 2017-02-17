@@ -1,6 +1,6 @@
 Student Enrollment
 
-[![BUILD Status](https://travis-ci.org/CT-Data-Collaborative/student-enrollment.svg?branch=master)(https://travis-ci.org/CT-Data-Collaborative/student-enrollment)]
+[![Build Status](https://travis-ci.org/CT-Data-Collaborative/student-enrollment.svg?branch=master)](https://travis-ci.org/CT-Data-Collaborative/student-enrollment)
 
 Student Enrollment reports the number of enrolled students, per grade.
 
