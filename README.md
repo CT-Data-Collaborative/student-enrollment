@@ -4,6 +4,9 @@ Student Enrollment
 
 Student Enrollment reports the number of enrolled students, per grade.
 
+Data Source: <http://edsight.ct.gov/>
+
+
 ## License MIT
 
 ## Getting Setup
