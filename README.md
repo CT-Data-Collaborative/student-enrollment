@@ -4,8 +4,6 @@ Student Enrollment
 
 Student Enrollment reports the number of enrolled students, per grade.
 
-Data Source: <http://edsight.ct.gov/>
-
 ## License MIT
 
 ## Getting Setup
@@ -29,12 +27,12 @@ for data suppression, we specifically exclude raw files from version control.
 
 Processing typically happens in either Python or R. However, testing is done with Python. We recommend setting up a 
 virtual environment for managing any specific dependencies for testing a given dataset as follow:
-
-`python3 -m venv /path/to/new/virtual/environment`
+  
+  `python3 -m venv /path/to/new/virtual/environment`
 
 You can then install the requirements like so:
-
-`pip install -r requirements.txt`
+  
+  `pip install -r requirements.txt`
 
 
 ### Metadata
@@ -42,22 +40,22 @@ You can then install the requirements like so:
 We implement many of the practices and tools from the [Frictionless Data](http://frictionlessdata.io/) paradigm. 
 Metadata should be specified in the generated `datapackage.json` file. A number of fields are pre-populated, but 
 complete specification is necessary in order to use our dataset testing framework and our publishing tools.
- 
+
 We add a number of additional properties to facilitate specific testing and publishing workflows. The `ckan_extras` 
 dictionary contains a number of additional required metadata fields. These fields are required by
 our CKAN extension.
 
 Entries should follow the following structure:
-
-```json
- "key": {
-      "ckan_name": "name when published to ckan",
-      "value": "value",
-      "type": "string",
-      "constraints": {
-        "enum": ["v1", "v2", "v3"]
-      }
-    }
+  
+  ```json
+"key": {
+  "ckan_name": "name when published to ckan",
+  "value": "value",
+  "type": "string",
+  "constraints": {
+    "enum": ["v1", "v2", "v3"]
+  }
+}
 ```
 
 We use the convention specified by the JSON Table Schema to add constraints or limitations to expected values. Our 
@@ -69,8 +67,8 @@ populated and enumerated for CKAN, which in turn controls the filter options tha
 
 The final extra property that should be present is an array of spot check tests which should be specified in the 
 `spot_tests` array using the following form:
-
-```json
+  
+  ```json
 "spot_checks": [
   {
     "filters": {
@@ -83,18 +81,18 @@ The final extra property that should be present is an array of spot check tests 
       "type": "integer"
     }
   }
-]
+  ]
 ```
 
 The filters should be sufficiently comprehensive so as to return only one result, which will then be compared against
- the `expected_value` property within the testing framework.
- 
- 
- **TODO: Explain factor relationship specification as provided within the PyTest plugin tests**
-  
-### Automated Testing
+the `expected_value` property within the testing framework.
 
-Testing relies on PyTest and a custom CTData PyTest plugin which is installed as a requirement dependency.
+
+**TODO: Explain factor relationship specification as provided within the PyTest plugin tests**
+  
+  ### Automated Testing
+  
+  Testing relies on PyTest and a custom CTData PyTest plugin which is installed as a requirement dependency.
 
 An example testing script is included in the `/tests` directory. Running `pytest -v` will execute this and 
 other tests.
