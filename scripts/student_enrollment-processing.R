@@ -85,7 +85,9 @@ long <- long[order(long$District, long$Year),]
 long$id <- NULL
 
 #merge in FIPS and match Districts to their Fixed Districts
-fips <- read.csv(paste0(path, "/", "school_district_ref.csv"), stringsAsFactors=F, header=T)
+district_dp_URL <- 'https://raw.githubusercontent.com/CT-Data-Collaborative/ct-school-district-list/master/datapackage.json'
+district_dp <- datapkg_read(path = district_dp_URL)
+fips <- (district_dp$data[[1]])
 
 merge_long_fips <- merge(long, fips, all=T)
 
