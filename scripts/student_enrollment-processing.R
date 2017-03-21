@@ -166,25 +166,34 @@ backfill_data <- backfill_data[order(backfill_data$FixedDistrict, backfill_data$
 backfill_data <- backfill_data[c("FixedDistrict", "District", "FIPS", "Year", "Grade", "Value")]
 
 #finds all districts that report values for the same year, for the same fixed district (only needs to be done if rowcount(backfill) != rowcount(backfill_data)) *should add conditional if statement
+#if this is populated, must resolve errors
 duplicates <- backfill_data[(duplicated(backfill_data[c("FixedDistrict","Year","Grade")]) | duplicated(backfill_data[c("FixedDistrict","Year","Grade")], fromLast = TRUE)), ]
 
-duplicates$Value <- as.integer(duplicates$Value)
-remove_duplicates <- aggregate(Value ~ FixedDistrict + District + Year + Grade , data = duplicates, sum)
 
-remove_duplicates <- remove_duplicates[c("FixedDistrict", "District", "Year", "Grade", "Value")]
-remove_duplicates$Grade <- factor(remove_duplicates$Grade, levels = cols_to_stack)
 
-remove_duplicates <- remove_duplicates[order(remove_duplicates$FixedDistrict, remove_duplicates$District, remove_duplicates$Year, remove_duplicates$Grade),]
+
+# duplicates$Value <- as.integer(duplicates$Value)
+# remove_duplicates <- aggregate(Value ~ FixedDistrict + District + Year + Grade , data = duplicates, sum)
+# 
+# remove_duplicates <- remove_duplicates[c("FixedDistrict", "District", "Year", "Grade", "Value")]
+# remove_duplicates$Grade <- factor(remove_duplicates$Grade, levels = cols_to_stack)
+# 
+# remove_duplicates <- remove_duplicates[order(remove_duplicates$FixedDistrict, remove_duplicates$District, remove_duplicates$Year, remove_duplicates$Grade),]
 
 #replaces duplicates from backfilled data with aggregated values
-enrollment_combined_final <- merge(backfill_data, remove_duplicates, by= c("FixedDistrict", "District", "Year", "Grade"),  all.x = T)
-enrollment_combined_final$Value.x[!is.na(enrollment_combined_final$Value.y)] <- enrollment_combined_final$Value.y[!is.na(enrollment_combined_final$Value.y)]
-enrollment_combined_final<-enrollment_combined_final[!duplicated(enrollment_combined_final), ]
-enrollment_combined_final$Value.y <-NULL
+enrollment_combined_final <- backfill_data
+  
+  
+
+
+
+# enrollment_combined_final$Value.x[!is.na(enrollment_combined_final$Value.y)] <- enrollment_combined_final$Value.y[!is.na(enrollment_combined_final$Value.y)]
+# enrollment_combined_final<-enrollment_combined_final[!duplicated(enrollment_combined_final), ]
+# enrollment_combined_final$Value.y <-NULL
 
 #reconfigure column names
-enrollment_combined_final <- enrollment_combined_final[c("FixedDistrict", "District", "FIPS", "Year", "Grade", "Value.x")]
-colnames(enrollment_combined_final)[6] <- "Value"
+enrollment_combined_final <- enrollment_combined_final[c("FixedDistrict", "District", "FIPS", "Year", "Grade", "Value")]
+#colnames(enrollment_combined_final)[6] <- "Value"
 enrollment_combined_final[2] = NULL
 colnames(enrollment_combined_final)[1] <- "District"
 
